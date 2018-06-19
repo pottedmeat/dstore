@@ -1,4 +1,4 @@
-define([], function () {
+define(['dojo/when'], function (when) {
 	/*=====
 	var __QueryMethodArgs = {
 		// type: String
@@ -59,7 +59,26 @@ define([], function () {
 			}
 
 			var newCollection = this._createSubCollection({
-				queryLog: this.queryLog.concat(logEntry)
+				queryLog: this.queryLog.concat(logEntry),
+				on: function (type, listener) {
+					var queryLog = this.queryLog;
+					this.inherited(arguments, [type, function (event) {
+						if (!event.target) {
+							return this.inherited(arguments);
+						}
+						var self = this;
+						var args = arguments;
+						when(event.target, function (target) {
+							var data = [target];
+							for (var i = 0, l = queryLog.length; i < l; i++) {
+								data = queryLog[i].querier(data);
+							}
+							if (data.length) {
+								listener.apply(self, args);
+							}
+						});
+					}]);
+				}
 			});
 
 			return applyQuery ? applyQuery.call(this, newCollection, logEntry) : newCollection;
